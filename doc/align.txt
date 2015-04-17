@@ -1,0 +1,60 @@
+
+A small sketch to determine the applicability of bramble data-types...
+
+{                                                                                        | RamlFile, RouteLookup[ PathSegment -> MethodLookup ]
+  "baseUri": "http://example.api.com/{version}",                                         | RamlMetadata
+  "/songs": {                                                                            | PathSegment -> MethodLookup
+      "post": null,                                                                      | Method
+      "get": {                                                                           | Method
+          "queryParameters": {                                                           | QueryLookup
+              "genre": {                                                                 | ParamName
+                  "description": "filter the songs by genre" } } },                      | ParamSpec
+      "is": [                                                                            | 
+          "paged",                                                                       | 
+          "secured" ],                                                                   | 
+      "/{songId}": {                                                                     | PathSegment -> MethodLookup
+          "get": {                                                                       | Method
+              "responses": {                                                             | 
+                  "200": {                                                               | 
+                      "body": {                                                          | 
+                          "application/xml": null,                                       | 
+                          "application/json": {                                          | 
+                              "schema": "SCHEMA-TEXT" } } } } },                         | Schema
+          "delete": {                                                                    | Method
+              "description": "This method will *delete* an **individual song**\n" } } }, | 
+  "traits": [                                                                            | TraitLookup
+      { "paged": {                                                                       | 
+            "queryParameters": {                                                         | QueryLookup
+                "pages": {                                                               | 
+                    "type": "number",                                                    | 
+                    "description": "The number of pages to return" } } } },              | 
+      { "secured": "todo" }                                                              | 
+  ],                                                                                     | 
+  "version": "v1",                                                                       | 
+  "title": "World Music API" }                                                           | 
+
+
+
+    type MIME           = String
+    type PathSegment    = String
+    type TraitName      = String
+    type ParamName      = String
+    type ResponseCode   = Int
+
+x   type RouteLookup    = Lookup PathSegment  RouteInfo
+    type MimeLookup     = Lookup MIME         BlockInfo
+    type ResponseLookup = Lookup ResponseCode ResponseInfo
+x   type MethodLookup   = Lookup Method       Info
+x   type TraitLookup    = Lookup TraitName    Info
+x   type QueryLookup    = Lookup ParamName    ParamSpec
+
+x   data RamlFile = RamlFile
+x   data RamlMetadata = RamlMetadata
+x   data Method = Get | Put | Post | Delete | Custom String deriving (Eq,Ord,Show)
+    data ParamType = StringParam | NumberParam  | IntegerParam
+    data RouteInfo = RouteInfo
+    data Info = Info
+x   data ParamSpec = ParamSpec
+    data ResponseInfo = ResponseInfo
+    data BlockInfo = BlockInfo
+x   data Schema = Schema String deriving (Eq,Ord,Show)

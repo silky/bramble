@@ -76,6 +76,19 @@ data Method = Get | Put | Post | Delete | Custom String deriving (Eq,Ord,Show)
 data ParamType = StringParam | NumberParam  | IntegerParam
                | DateParam   | BooleanParam | FileParam deriving (Eq,Ord,Show)
 
+stringToParam :: T.Text -> J.Parser ParamType
+stringToParam "string"  = return StringParam
+stringToParam "number"  = return NumberParam
+stringToParam "integer" = return IntegerParam
+stringToParam "date"    = return DateParam
+stringToParam "boolean" = return BooleanParam
+stringToParam "file"    = return FileParam
+stringToParam _         = mzero
+
+instance J.FromJSON ParamType where
+  parseJSON (J.String s) = stringToParam s
+  parseJSON _            = mzero
+
 data RouteInfo = RouteInfo
   { methods   :: MethodLookup
   , subRoutes :: RouteLookup } deriving (Eq,Ord,Show)
@@ -87,23 +100,28 @@ data Info = Info
   { description    :: Maybe String
   , parameters     :: QueryLookup
   , requests       :: BlockInfo
-  , requestSchema  :: Schema
+  , requestSchema  :: Maybe Schema
   , responses      :: ResponseLookup
-  , responseSchema :: Schema } deriving (Eq,Ord,Show)
+  , responseSchema :: Maybe Schema } deriving (Eq,Ord,Show)
 
 getParameters :: J.Object -> J.Parser QueryLookup
 getParameters o = do
   ps <- o .:? "queryParameters" .!= emptyLookup
   return ps
 
+getRequests       = E.assert False undefined
+getRequestSchema  = E.assert False undefined
+getResponses      = E.assert False undefined
+getResponseSchema = E.assert False undefined
+
 instance J.FromJSON Info where
   parseJSON (J.Object o) = do
     description    <- o .:? "description"
-    parameters     <- getParameters o
-    requests       <- undefined
-    requestSchema  <- undefined
-    responses      <- undefined
-    responseSchema <- undefined
+    parameters     <- getParameters     o
+    requests       <- getRequests       o
+    requestSchema  <- getRequestSchema  o
+    responses      <- getResponses      o
+    responseSchema <- getResponseSchema o
     return Info { .. }
 
   parseJSON _ = mzero
@@ -116,6 +134,8 @@ data ParamSpec = ParamSpec
 instance J.FromJSON ParamSpec where
   parseJSON (J.Object o) = do
     paramDescription <- o .:? "description"
+    displayName      <- o .:? "displayName"
+    paramType        <- o .:? "type"
     return ParamSpec { .. }
 
   parseJSON _ = mzero
