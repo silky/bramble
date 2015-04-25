@@ -1,0 +1,60 @@
+
+A small sketch to determine the applicability of bramble data-types...
+
+{                                                           | RamlFile, RouteLookup[ PathSegment -> MethodLookup ]
+  "baseUri": "http://example.api.com/{version}",            | RamlMetadata
+  "/songs": {                                               | PathSegment -> MethodLookup
+      "post": null,                                         | Method
+      "get": {                                              | Method
+          "queryParameters": {                              | QueryLookup
+              "genre": {                                    | ParamName
+                  "description": "filter the s.."}}},       | ParamSpec
+      "is": [                                               | TraitList
+          "paged",                                          | TraitName
+          "secured" ],                                      | TraitName
+      "/{songId}": {                                        | PathSegment -> MethodLookup
+          "get": {                                          | Method
+              "responses": {                                | ResponseLookup
+                  "200": {                                  | ResponseCode
+                      "body": {                             | MimeLookup
+                          "application/xml": null,          | Mim
+                          "application/json": {             | MIME -> ResponseInfo
+                              "schema": "SCHEMA-TEXT"}}}}}, | Schema
+          "delete": {                                       | Method
+              "description": "This met... song**\n"}}},     | Info
+  "traits": [                                               | TraitLookup
+      { "paged": {                                          | TraitName
+            "queryParameters": {                            | Info
+                "pages": {                                  | ...
+                    "type": "number",                       | ...
+                    "description": "The number of .. "}}}}, | ...
+      { "secured": "todo" }                                 | ...
+  ],                                                        | ...
+  "version": "v1",                                          | RamlMetadata
+  "title": "World Music API" }                              | RamlMetadata
+
+
+
+    type MIME           = String
+    type PathSegment    = String
+    type TraitName      = String
+    type ParamName      = String
+    type ResponseCode   = Int
+
+x   type RouteLookup    = Lookup PathSegment  RouteInfo
+    type MimeLookup     = Lookup MIME         ResponseInfo
+    type ResponseLookup = Lookup ResponseCode ResponseInfo
+x   type MethodLookup   = Lookup Method       Info
+x   type TraitLookup    = Lookup TraitName    Info
+x   type QueryLookup    = Lookup ParamName    ParamSpec
+
+x   data RamlFile = RamlFile
+x   data RamlMetadata = RamlMetadata
+x   data Method = Get | Put | Post | Delete | Custom String deriving (Eq,Ord,Show)
+    data ParamType = StringParam | NumberParam  | IntegerParam
+    data RouteInfo = RouteInfo
+    data Info = Info
+x   data ParamSpec = ParamSpec
+    data ResponseInfo = ResponseInfo
+    data ResponseInfo = ResponseInfo
+x   data Schema = Schema String deriving (Eq,Ord,Show)
