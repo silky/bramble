@@ -12,3 +12,8 @@ It provides two interfaces:
 # Structure
 
 [![Data Dependencies](https://raw.githubusercontent.com/sordina/bramble/master/doc/data.png)](https://github.com/sordina/bramble/blob/master/doc/data.png)
+
+# TODO
+
+* Use a real schema such as https://github.com/timjb/aeson-schema/blob/master/aeson-schema.cabal
+  or https://github.com/seagreen/hjsonschema/blob/master/hjsonschema.cabal

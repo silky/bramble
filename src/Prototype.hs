@@ -8,6 +8,7 @@
 {- TODO:
  -
  - * Include Wreq support for client generation.
+ - * Include Json-Schema support for schema validation
  -}
 
 -- A little prototype for RAML client verification
@@ -25,7 +26,6 @@ import qualified Data.Aeson.Encode.Pretty   as J
 -- STDLIB qualified imports:
 
 import qualified Data.ByteString.Lazy.Char8 as B
-import qualified Control.Exception          as E
 import qualified Data.Map                   as M
 import qualified Data.HashMap.Strict        as H
 import qualified Data.Vector                as V
@@ -37,7 +37,7 @@ import qualified Data.List                  as L
 import Data.Aeson ((.:?), (.!=))
 import Data.Monoid
 import Control.Arrow
-import Debug.Trace -- TODO: Remove once debugging is done
+import Text.Groom -- TODO: Remove once I'm happy with the format
 import Safe
 
 -- Simple type aliases:
@@ -49,7 +49,7 @@ type TraitName    = String
 type ParamName    = String
 type ResponseCode = Int
 
--- Helper function to perform pairwise monadic actions
+-- Helper function to perform pairwise monadic actions - "Half-Kleisli"?
 
 (/*/) :: Monad m => (t -> m t2) -> (t1 -> m t3) -> (t, t1) -> m (t2, t3)
 a /*/ b = runKleisli (Kleisli a *** Kleisli b)
@@ -67,11 +67,6 @@ infix 4 /*
 
 intKey :: T.Text -> J.Parser ResponseCode
 intKey k = maybe (k <~> "intKey") return $ readMay (T.unpack k)
-
--- Debugging helper - Print the object, then fail with an error message
--- TODO: Remove this once dev is done
-(<!>) :: (Show a, Monad m) => a -> [Char] -> m a1
-v <!> s = trace (show v) $ fail $ s ++ " not implemented"
 
 -- Fail with a helpful message
 (<~>) :: (Show a, Monad m) => a -> [Char] -> m a1
@@ -139,8 +134,9 @@ instance J.FromJSON ParamType where
   parseJSON x            = x <~> "ParamType"
 
 data RouteInfo = RouteInfo
-  { methods   :: MethodLookup
-  , subRoutes :: RouteLookup } deriving (Eq,Ord,Show)
+  { methods        :: MethodLookup
+  , includedTraits :: TraitList
+  , subRoutes      :: RouteLookup } deriving (Eq,Ord,Show)
 
 isRoute :: (T.Text, t) -> Bool
 isRoute (k,_) = T.isPrefixOf "/" k
@@ -152,12 +148,17 @@ textToMethod "post"   = return Post
 textToMethod "delete" = return Delete
 textToMethod x        = return $ Custom (T.unpack x)
 
+getIncludedTraits :: J.Object -> J.Parser TraitList
+getIncludedTraits o = o .:? "is" .!= emptyTraitList
+
 instance J.FromJSON RouteInfo where
   parseJSON (J.Object o) = do
     let items               = H.toList o
-        (pRoutes, pMethods) = L.partition isRoute items
-    subRoutes              <- fmap M.fromList $ mapM ((return . T.unpack) /*/ J.parseJSON) pRoutes
-    methods                <- fmap M.fromList $ mapM (textToMethod        /*/ J.parseJSON) pMethods
+        (pRoutes, mMethods) = L.partition isRoute items
+        (_inc,    pMethods) = L.partition ((== "is") . fst) mMethods
+    subRoutes              <- fmap M.fromList $ mapM (T.unpack      */ J.parseJSON) pRoutes
+    methods                <- fmap M.fromList $ mapM (textToMethod /*/ J.parseJSON) pMethods
+    includedTraits         <- getIncludedTraits o
     return RouteInfo { .. }
 
   parseJSON x = x <~> "RouteInfo"
@@ -166,31 +167,20 @@ data Info = Info
   { description    :: Maybe String
   , parameters     :: QueryLookup
   , requestSchema  :: Maybe Schema
-  , includedTraits :: TraitList
   , responses      :: ResponseLookup } deriving (Eq,Ord,Show)
 
 getParameters :: J.Object -> J.Parser QueryLookup
 getParameters o = o .:? "queryParameters" .!= emptyLookup
 
-getRequestSchema :: J.Object -> J.Parser (Maybe Schema)
-getRequestSchema o = o .:? "schema"
-
 getResponses :: J.Object -> J.Parser ResponseLookup
 getResponses o = o .:? "responses" .!= emptyLookup
-
-getResponseSchema :: J.Object -> J.Parser (Maybe Schema)
-getResponseSchema o = trace (show o) $ E.assert False undefined
-
-getIncludedTraits :: J.Object -> J.Parser TraitList
-getIncludedTraits o = o .:? "is" .!= emptyTraitList
 
 instance J.FromJSON Info where
   parseJSON (J.Object o) = do
     description    <- o .:? "description"
-    parameters     <- getParameters     o
-    requestSchema  <- getRequestSchema  o
-    responses      <- getResponses      o
-    includedTraits <- getIncludedTraits o
+    parameters     <- getParameters o
+    requestSchema  <- o .:? "schema"
+    responses      <- getResponses o
     return Info { .. }
 
   parseJSON x = x <~> "Info"
@@ -223,7 +213,7 @@ instance J.FromJSON ResponseInfo where
 
 newtype Schema = Schema T.Text deriving (Eq,Ord,Show)
 
-instance J.FromJSON Schema where
+instance J.FromJSON Schema where -- TODO: Use a real schema object
   parseJSON (J.String s) = return $ Schema s
   parseJSON x            = x <~> "Schema"
 
@@ -270,9 +260,6 @@ getMetadata o = do
 parseRaml :: String -> IO (Either YE.ParseException RamlFile)
 parseRaml = Y.decodeFileEither
 
-parseValue :: String -> IO (Either YE.ParseException J.Value)
-parseValue = Y.decodeFileEither
-
 showYaml :: Either YE.ParseException J.Value -> IO ()
 showYaml (Left  _)  = return ()
 showYaml (Right x) = B.putStrLn $ J.encodePretty x
@@ -282,6 +269,4 @@ showYaml (Right x) = B.putStrLn $ J.encodePretty x
 -- validating both the request and the response.
 
 main :: IO ()
-main = do
-  parseValue "resources/worldmusic.raml" >>= showYaml
-  parseRaml  "resources/worldmusic.raml" >>= print
+main = parseRaml "resources/worldmusic.raml" >>= putStrLn . groom
