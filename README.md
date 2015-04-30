@@ -17,3 +17,4 @@ It provides two interfaces:
 
 * Use a real schema such as https://github.com/timjb/aeson-schema/blob/master/aeson-schema.cabal
   or https://github.com/seagreen/hjsonschema/blob/master/hjsonschema.cabal
+* Show the failure path in parsing errors

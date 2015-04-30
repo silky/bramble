@@ -4,6 +4,7 @@
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric              #-}
 
 {- TODO:
  -
@@ -39,6 +40,7 @@ import Data.Monoid
 import Control.Arrow
 import Text.Groom -- TODO: Remove once I'm happy with the format
 import Safe
+-- import GHC.Generics
 
 -- Simple type aliases:
 -- TODO: Wrap these in newtypes
@@ -72,12 +74,8 @@ intKey k = maybe (k <~> "intKey") return $ readMay (T.unpack k)
 (<~>) :: (Show a, Monad m) => a -> [Char] -> m a1
 v <~> s = fail $ "Found unexpected value during " ++ s ++ " ~> " ++ show v
 
-mimeLookup :: J.Value -> J.Parser MimeLookup
-mimeLookup (J.Object v) = fmap M.fromList $ mapM (T.unpack */ J.parseJSON) (H.toList v)
-mimeLookup x = x <~> "mimeLookup"
-
 instance J.FromJSON ResponseLookup where
-  parseJSON (J.Object o) = fmap M.fromList $ mapM (intKey /*/ mimeLookup) (H.toList o)
+  parseJSON (J.Object o) = fmap M.fromList $ mapM (intKey /*/ J.parseJSON) (H.toList o)
   parseJSON x            = x <~> "ResponseLookup"
 
 -- Lookups:
@@ -85,7 +83,7 @@ instance J.FromJSON ResponseLookup where
 type Lookup a b     = M.Map  a            b
 type RouteLookup    = Lookup PathSegment  RouteInfo
 type MimeLookup     = Lookup MIME         ResponseInfo
-type ResponseLookup = Lookup ResponseCode MimeLookup
+type ResponseLookup = Lookup ResponseCode ResponseComponents
 type MethodLookup   = Lookup Method       (Maybe Info)
 type TraitLookup    = Lookup TraitName    Info
 type QueryLookup    = Lookup ParamName    ParamSpec
@@ -96,7 +94,7 @@ emptyLookup = M.empty
 -- Data Types and Instances:
 
 data RamlFile = RamlFile
-  { metaData :: RamlMetadata
+  { metaData :: Metadata
   , traits   :: TraitLookup
   , routes   :: RouteLookup } deriving (Eq,Ord,Show)
 
@@ -109,7 +107,7 @@ instance J.FromJSON RamlFile where
 
   parseJSON x = x <~> "RamlFile"
 
-data RamlMetadata = RamlMetadata
+data Metadata = Metadata
   { ramlVersion :: Maybe String
   , title       :: Maybe String
   , baseUri     :: Maybe String
@@ -185,6 +183,16 @@ instance J.FromJSON Info where
 
   parseJSON x = x <~> "Info"
 
+data ResponseComponents = ResponseComponents
+  { bodyTypes :: MimeLookup } deriving (Eq, Ord, Show)
+
+instance J.FromJSON ResponseComponents where
+  parseJSON (J.Object o) = do
+    bodyTypes <- o .:? "body" .!= emptyLookup
+    return ResponseComponents { .. }
+
+  parseJSON x = x <~> "ResponseComponents"
+
 data ParamSpec = ParamSpec
   { paramDescription :: Maybe String
   , displayName      :: Maybe String
@@ -209,9 +217,15 @@ instance J.FromJSON ResponseInfo where
     schema  <- o .:? "schema"
     return ResponseInfo { .. }
 
+  parseJSON J.Null = return $ ResponseInfo Nothing Nothing
+
   parseJSON x = x <~> "ResponseInfo"
 
-newtype Schema = Schema T.Text deriving (Eq,Ord,Show)
+newtype Schema = Schema { getSchemaText :: T.Text } deriving (Eq,Ord)
+
+-- TODO: Show instance hack for groom output only
+instance Show Schema where
+  show = ("Schema " ++) . show . (++ "...") . T.unpack . T.take 50 . getSchemaText
 
 instance J.FromJSON Schema where -- TODO: Use a real schema object
   parseJSON (J.String s) = return $ Schema s
@@ -247,13 +261,13 @@ getRoutes o = J.parseJSON (J.Object routeList)
   routeList = H.filterWithKey kTest o
   kTest k _ = T.head k == '/'
 
-getMetadata :: J.Object -> J.Parser RamlMetadata
+getMetadata :: J.Object -> J.Parser Metadata
 getMetadata o = do
   let ramlVersion = Nothing -- Seemingly no way to extract this through regular YAML parsing
   title   <- o .:? "title"
   baseUri <- o .:? "baseUri"
   version <- o .:? "version"
-  return RamlMetadata { .. }
+  return Metadata { .. }
 
 -- Parsers:
 
