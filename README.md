@@ -18,3 +18,4 @@ It provides two interfaces:
 * Use a real schema such as https://github.com/timjb/aeson-schema/blob/master/aeson-schema.cabal
   or https://github.com/seagreen/hjsonschema/blob/master/hjsonschema.cabal
 * Show the failure path in parsing errors
+* Curretly depends on [my fork of wreq - PR pending](https://github.com/bos/wreq/pull/66)

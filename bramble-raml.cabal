@@ -21,8 +21,9 @@ executable bramble
                        text                 >= 1.1,
                        vector               >= 0.10,
                        safe                 >= 0.3,
-                       groom                >= 0.1
-                       -- hjsonschema          >= 0.5
+                       groom                >= 0.1,
+                       wreq                 >= 0.4.1
+                       -- hjsonschema       >= 0.5
 
   hs-source-dirs:      src
   default-language:    Haskell2010

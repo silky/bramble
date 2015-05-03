@@ -24,6 +24,8 @@ import qualified Data.Aeson                 as J
 import qualified Data.Aeson.Types           as J
 import qualified Data.Aeson.Encode.Pretty   as J
 
+import qualified Network.Wreq               as W
+
 -- STDLIB qualified imports:
 
 import qualified Data.ByteString.Lazy.Char8 as B
@@ -283,4 +285,6 @@ showYaml (Right x) = B.putStrLn $ J.encodePretty x
 -- validating both the request and the response.
 
 main :: IO ()
-main = parseRaml "resources/worldmusic.raml" >>= putStrLn . groom
+main = do
+  putStrLn . groom =<< parseRaml "resources/worldmusic.raml"
+  putStrLn . groom =<< W.customMethodPayloadMaybeWith "PATCH" W.defaults "http://httpbin.org/patch" (Just $ J.toJSON [1 :: Int ,2,3])
