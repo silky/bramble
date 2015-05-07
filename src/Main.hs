@@ -21,19 +21,19 @@ import Control.Monad.Trans.Either hiding (left)
 import qualified Network.Wreq               as W
 import qualified Network.Wreq.Types         as W
 import qualified Data.ByteString.Lazy.Char8 as B
-import qualified Data.Yaml.Include          as Y
-import qualified Data.Yaml                  as YE
+import qualified Data.Yaml.Include          as YI
+import qualified Data.Yaml                  as Y
 
 -- Main
 
 mainE :: IO (Either ValidationError (W.Response B.ByteString))
 mainE = runEitherT $ do
-  loadedRaml <- liftIO $ Y.decodeFileEither "resources/worldmusic.raml"
+  loadedRaml <- liftIO $ YI.decodeFileEither "resources/worldmusic.raml"
   _          <- liftIO $ putStrLn $ groom loadedRaml -- TODO: Debugging
   ramlE      <- fromEither $ left ParseError loadedRaml
   apiResult  <- liftIO $ genericClientSchema ramlE "PATCH" W.defaults
                   "http://httpbin.org/patch"
-                  (Just $ YE.toJSON [1 :: Int ,2,3])
+                  (Just $ Y.toJSON [1 :: Int ,2,3])
   fromEither apiResult
 
 main :: IO ()
@@ -46,7 +46,7 @@ genericClient verb options url body = W.customMethodPayloadMaybeWith verb option
 
 data RequestValidationError  = ReqVE deriving (Eq, Ord, Show)
 data ResponseValidationError = ResVE deriving (Eq, Ord, Show)
-data ValidationError         = ParseError YE.ParseException
+data ValidationError         = ParseError Y.ParseException
                              | RequestValidationError | ResponseValidationError
                                deriving (Show)
 
