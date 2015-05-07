@@ -6,29 +6,15 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveGeneric              #-}
 
-{- TODO:
- -
- - * Include Wreq support for client generation.
- - * Include Json-Schema support for schema validation
- -}
-
--- A little prototype for RAML client verification
-
-module Prototype where
+module RAML where
 
 -- External qualified imports:
 
-import qualified Data.Yaml.Include          as Y
-import qualified Data.Yaml                  as YE
 import qualified Data.Aeson                 as J
 import qualified Data.Aeson.Types           as J
-import qualified Data.Aeson.Encode.Pretty   as J
-
-import qualified Network.Wreq               as W
 
 -- STDLIB qualified imports:
 
-import qualified Data.ByteString.Lazy.Char8 as B
 import qualified Data.Map                   as M
 import qualified Data.HashMap.Strict        as H
 import qualified Data.Vector                as V
@@ -40,9 +26,7 @@ import qualified Data.List                  as L
 import Data.Aeson ((.:?), (.!=))
 import Data.Monoid
 import Control.Arrow
-import Text.Groom -- TODO: Remove once I'm happy with the format
 import Safe
--- import GHC.Generics
 
 -- Simple type aliases:
 -- TODO: Wrap these in newtypes
@@ -270,21 +254,3 @@ getMetadata o = do
   baseUri <- o .:? "baseUri"
   version <- o .:? "version"
   return Metadata { .. }
-
--- Parsers:
-
-parseRaml :: String -> IO (Either YE.ParseException RamlFile)
-parseRaml = Y.decodeFileEither
-
-showYaml :: Either YE.ParseException J.Value -> IO ()
-showYaml (Left  _)  = return ()
-showYaml (Right x) = B.putStrLn $ J.encodePretty x
-
--- Load the RAML file and build a client.
--- Use the client to fetch a webpage,
--- validating both the request and the response.
-
-main :: IO ()
-main = do
-  putStrLn . groom =<< parseRaml "resources/worldmusic.raml"
-  putStrLn . groom =<< W.customMethodPayloadMaybeWith "PATCH" W.defaults "http://httpbin.org/patch" (Just $ J.toJSON [1 :: Int ,2,3])

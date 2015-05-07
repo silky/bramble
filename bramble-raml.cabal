@@ -22,7 +22,10 @@ executable bramble
                        vector               >= 0.10,
                        safe                 >= 0.3,
                        groom                >= 0.1,
-                       wreq                 >= 0.4.1
+                       wreq                 >= 0.4.1,
+                       EitherT              >= 0.2,
+                       transformers         >= 0.3
+
                        -- hjsonschema       >= 0.5
 
   hs-source-dirs:      src
