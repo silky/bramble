@@ -7,7 +7,9 @@ module Main where
 
 -- Internal Imports
 
-import qualified RAML as R
+import qualified RAML     as R
+import qualified Request  as Req
+import qualified Response as Res
 
 -- External Imports
 
@@ -41,32 +43,27 @@ main = putStrLn . groom =<< mainE
 
 -- Implementation
 
-genericClient :: W.Putable a => String -> W.Options -> String -> Maybe a -> IO (W.Response B.ByteString)
+genericClient :: W.Putable a => String  -> W.Options -> String
+                             -> Maybe a -> IO (W.Response B.ByteString)
 genericClient verb options url body = W.customMethodPayloadMaybeWith verb options url body
 
-data RequestValidationError  = ReqVE deriving (Eq, Ord, Show)
-data ResponseValidationError = ResVE deriving (Eq, Ord, Show)
-data ValidationError         = ParseError Y.ParseException
-                             | RequestValidationError | ResponseValidationError
-                               deriving (Show)
+data ValidationError = ParseError Y.ParseException
+                     | ReqVE Req.RequestValidationError
+                     | ResVE Res.ResponseValidationError
+                     deriving (Show)
 
 fromEither :: Either l a -> EitherT l IO a
 fromEither = EitherT . return
 
-validateRequest :: W.Putable a
-                   => R.RamlFile -> String -> W.Options -> String -> Maybe a
-                   -> Either ValidationError ()
-validateRequest _ _ _ _ _ = return ()
-
-validateResponse :: R.RamlFile -> String -> W.Options -> String
-                 -> W.Response B.ByteString -> Either ValidationError ()
-validateResponse _ _ _ _ _ = return ()
-
 genericClientSchema :: W.Putable a
-                    => R.RamlFile -> String -> W.Options -> String -> Maybe a
+                    => R.RamlFile
+                    -> String
+                    -> W.Options
+                    -> String
+                    -> Maybe a
                     -> IO (Either ValidationError (W.Response B.ByteString))
 genericClientSchema raml verb options url body = runEitherT $ do
-  _        <- fromEither $ validateRequest raml verb options url body
+  _        <- fromEither $ left ReqVE $ Req.validateRequest raml verb options url body
   response <- liftIO $ W.customMethodPayloadMaybeWith verb options url body
-  _        <- fromEither $ validateResponse raml verb options url response
+  _        <- fromEither $ left ResVE $ Res.validateResponse raml verb options url response
   return response
