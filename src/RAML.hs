@@ -132,6 +132,9 @@ textToMethod "post"   = return Post
 textToMethod "delete" = return Delete
 textToMethod x        = return $ Custom (T.unpack x)
 
+stringToMethod :: Monad m => String -> m Method
+stringToMethod = textToMethod . T.pack
+
 getIncludedTraits :: J.Object -> J.Parser TraitList
 getIncludedTraits o = o .:? "is" .!= emptyTraitList
 
@@ -152,6 +155,37 @@ data Info = Info
   , parameters     :: QueryLookup
   , requestSchema  :: Maybe Schema
   , responses      :: ResponseLookup } deriving (Eq,Ord,Show)
+
+instance Monoid Info where
+  mempty = Info { description    = Nothing
+                , parameters     = M.empty
+                , requestSchema  = Nothing
+                , responses      = M.empty
+                }
+
+  mappend (Info { description    = aDesc
+                , parameters     = aParams
+                , requestSchema  = aReqSchema
+                , responses      = aRes })
+          (Info { description    = bDesc
+                , parameters     = bParams
+                , requestSchema  = bReqSchema
+                , responses      = bRes })
+         = Info { description    = combineDescriptions aDesc bDesc
+                , parameters     = M.union aParams bParams
+                , requestSchema  = combineSchemas aReqSchema bReqSchema
+                , responses      = M.union aRes bRes }
+
+    where
+
+    combineDescriptions a        Nothing  = a
+    combineDescriptions Nothing  b        = b
+    combineDescriptions (Just a) (Just b) = Just (a ++ "; "++ b)
+
+    combineSchemas      a        Nothing  = a -- TODO: Support combining schemas by validating both
+    combineSchemas      Nothing  b        = b
+    combineSchemas      _        _        = error "Combining two schemas isn't currently supported..."
+
 
 getParameters :: J.Object -> J.Parser QueryLookup
 getParameters o = o .:? "queryParameters" .!= emptyLookup

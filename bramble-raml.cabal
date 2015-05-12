@@ -24,7 +24,8 @@ executable bramble
                        groom                >= 0.1,
                        wreq                 >= 0.4.1,
                        EitherT              >= 0.2,
-                       transformers         >= 0.3
+                       transformers         >= 0.3,
+                       split                >= 0.2
 
                        -- hjsonschema       >= 0.5
 
