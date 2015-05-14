@@ -1,16 +1,18 @@
 #!/bin/bash
 
+MODEL="src/RAML.hs"
+
 echo 'digraph {'
-data="$(grep '^data' src/Prototype.hs | sed 's/data //; s/ .*//')"
-data="$data $(grep '^newtype' src/Prototype.hs | sed 's/newtype //; s/ .*//')"
+data="$(grep '^data' $MODEL | sed 's/data //; s/ .*//')"
+data="$data $(grep '^newtype' $MODEL | grep -v 'newtype Schema' | sed 's/newtype //; s/ .*//')"
 for i in $data
 do
 	echo "$i;"
-	targets="$(grep "data $i .*=" src/Prototype.hs -A 6 \
+	targets="$(grep "data $i .*=" $MODEL -A 6 \
 		| sed '/^$/,$d' \
 		| grep '::' \
 		| sed 's/.*:: //; s/Maybe //; s/J.Value//; s/String//; s/ .*//; s/\[//g; s/\]//g')"
-	targets="$targets $(grep "newtype $i .*=" src/Prototype.hs -A 6 \
+	targets="$targets $(grep "newtype $i .*=" $MODEL -A 6 \
 		| sed '/^$/,$d' \
 		| grep '::' \
 		| sed 's/.*:: //; s/Maybe //; s/J.Value//; s/String//; s/ .*//; s/\[//g; s/\]//g')"
@@ -20,11 +22,11 @@ do
 	done
 done
 
-types="$(grep '^type' src/Prototype.hs | grep -v '^type Lookup' | sed 's/type //; s/ .*//')"
+types="$(grep '^type' $MODEL | grep -v '^type Lookup' | sed 's/type //; s/ .*//')"
 for i in $types
 do
 	echo "$i;"
-	targets="$(grep "type $i .*=" src/Prototype.hs \
+	targets="$(grep "type $i .*=" $MODEL \
 		| sed 's/^.*= //' \
 		| sed 's/[()]//g' \
 		| sed 's/Maybe//g' \
