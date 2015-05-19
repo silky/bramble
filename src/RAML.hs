@@ -20,12 +20,14 @@ import qualified Data.HashMap.Strict        as H
 import qualified Data.Vector                as V
 import qualified Data.Text                  as T
 import qualified Data.List                  as L
+import qualified Data.Functor.Identity      as I
 
 -- Unqualified imports:
 
 import Data.Aeson ((.:?), (.!=))
 import Data.Monoid
 import Control.Arrow
+import Data.String
 import Safe
 
 -- Simple type aliases:
@@ -100,6 +102,9 @@ data Metadata = Metadata
   , version     :: Maybe String } deriving (Eq,Ord,Show)
 
 data Method = Get | Put | Post | Delete | Custom String deriving (Eq,Ord,Show)
+
+instance IsString Method where
+  fromString = I.runIdentity . stringToMethod
 
 data ParamType = StringParam | NumberParam  | IntegerParam
                | DateParam   | BooleanParam | FileParam deriving (Eq,Ord,Show)

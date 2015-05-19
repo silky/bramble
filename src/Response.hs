@@ -8,7 +8,7 @@ import qualified Data.ByteString.Lazy.Char8 as B
 data ResponseValidationError = ResVE deriving (Eq, Ord, Show)
 
 validateResponse :: R.RamlFile
-                 -> String
+                 -> R.Method
                  -> W.Options
                  -> String
                  -> W.Response B.ByteString

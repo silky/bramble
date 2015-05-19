@@ -6,18 +6,23 @@ module Request where
 
 import qualified RAML               as R
 import qualified Data.Map           as M
+import qualified Data.Text          as T
 import qualified Data.List.Split    as S
 import qualified Network.Wreq       as W
-import qualified Network.Wreq.Types as W
+import qualified Network.Wreq.Types as WT
 
+import Data.Maybe
 import Data.Monoid
 
--- Implementation
+-- Internal Data Structures
 
-data RequestValidationError = ReqVE String
-                            deriving (Eq, Ord, Show)
+data RequestValidationError = ReqVE String deriving (Eq, Ord, Show)
 
 type ReqVal a = Either RequestValidationError a
+
+type TextLookup = [(T.Text, T.Text)]
+
+-- Implementation
 
 contextError :: forall b. String -> Either RequestValidationError b
 contextError context = Left $ ReqVE $ "Could not locate requested route: " ++ context
@@ -48,22 +53,24 @@ methodError context = Left $ ReqVE $ "Could not locate requested method: " ++ co
 getMethod :: R.Method -> R.RouteInfo -> ReqVal (Maybe R.Info)
 getMethod m r = maybe (methodError (show m)) Right $ M.lookup m (R.methods r)
 
-validateRequestSchema :: W.Putable a => Maybe R.Info -> Maybe a -> ReqVal ()
+validateRequestSchema :: WT.Putable a => Maybe R.Schema -> Maybe a -> ReqVal ()
 validateRequestSchema = undefined
 
-validateQueryParams = undefined
+validateQueryParams :: R.QueryLookup -> TextLookup -> ReqVal ()
+validateQueryParams iParams oParams = undefined
 
-validateRequest :: W.Putable a
-                => R.RamlFile
-                -> R.Method
-                -> W.Options
-                -> String
-                -> Maybe a
-                -> Either RequestValidationError ()
+validateRequest :: WT.Putable a => R.RamlFile
+                                -> R.Method
+                                -> W.Options
+                                -> String
+                                -> Maybe a
+                                -> Either RequestValidationError ()
 validateRequest raml verb options url body = do
-  routeInfo <- getUrl url raml
-  included  <- return $ getIncludedTraits raml routeInfo
-  info      <- getMethod verb routeInfo
-  validateRequestSchema info body
-  validateQueryParams
-  return ()
+  routeInfo    <- getUrl url raml
+  info         <- fromMaybe mempty `fmap` getMethod verb routeInfo
+
+  let included  = getIncludedTraits raml routeInfo
+      infos     = info <> included
+
+  validateRequestSchema (R.requestSchema infos) body
+  validateQueryParams   (R.parameters    infos) (WT.params options)

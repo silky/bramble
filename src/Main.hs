@@ -3,6 +3,8 @@
  - * Include Json-Schema support for schema validation
  -}
 
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
 -- Internal Imports
@@ -43,10 +45,6 @@ main = putStrLn . groom =<< mainE
 
 -- Implementation
 
-genericClient :: W.Putable a => String  -> W.Options -> String
-                             -> Maybe a -> IO (W.Response B.ByteString)
-genericClient verb options url body = W.customMethodPayloadMaybeWith verb options url body
-
 data ValidationError = ParseError Y.ParseException
                      | ReqVE Req.RequestValidationError
                      | ResVE Res.ResponseValidationError
@@ -57,13 +55,13 @@ fromEither = EitherT . return
 
 genericClientSchema :: W.Putable a
                     => R.RamlFile
-                    -> String
+                    -> R.Method
                     -> W.Options
                     -> String
                     -> Maybe a
                     -> IO (Either ValidationError (W.Response B.ByteString))
 genericClientSchema raml verb options url body = runEitherT $ do
   _        <- fromEither $ left ReqVE $ Req.validateRequest raml verb options url body
-  response <- liftIO $ W.customMethodPayloadMaybeWith verb options url body
+  response <- liftIO $ W.customMethodPayloadMaybeWith (show verb) options url body
   _        <- fromEither $ left ResVE $ Res.validateResponse raml verb options url response
   return response
