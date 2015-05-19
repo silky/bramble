@@ -16,7 +16,7 @@ import Data.Monoid
 
 -- Internal Data Structures
 
-data RequestValidationError = ReqVE String deriving (Eq, Ord, Show)
+type RequestValidationError = String
 
 type ReqVal a = Either RequestValidationError a
 
@@ -25,7 +25,7 @@ type TextLookup = [(T.Text, T.Text)]
 -- Implementation
 
 contextError :: forall b. String -> Either RequestValidationError b
-contextError context = Left $ ReqVE $ "Could not locate requested route: " ++ context
+contextError context = Left $ "Could not locate requested route: " ++ context
 
 getUrlSegments :: String -> [R.PathSegment] -> R.RouteLookup -> ReqVal R.RouteInfo
 getUrlSegments context [ ]    _ = contextError context
@@ -48,7 +48,7 @@ getIncludedTraits raml routeInfo = mconcat relevant
   relevant = M.elems $ M.filterWithKey (\k _ -> elem k included) traits
 
 methodError :: forall b. String -> ReqVal b
-methodError context = Left $ ReqVE $ "Could not locate requested method: " ++ context
+methodError context = Left $ "Could not locate requested method: " ++ context
 
 getMethod :: R.Method -> R.RouteInfo -> ReqVal (Maybe R.Info)
 getMethod m r = maybe (methodError (show m)) Right $ M.lookup m (R.methods r)
