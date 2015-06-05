@@ -10,6 +10,7 @@ import qualified Data.Text          as T
 import qualified Data.List.Split    as S
 import qualified Network.Wreq       as W
 import qualified Network.Wreq.Types as WT
+import qualified Body               as B
 
 import Data.Maybe
 import Data.Monoid
@@ -17,15 +18,13 @@ import Data.Monoid
 -- Internal Data Structures
 
 type RequestValidationError = String
-
-type ReqVal a = Either RequestValidationError a
-
-type TextLookup = [(T.Text, T.Text)]
+type ReqVal a               = Either RequestValidationError a
+type TextLookup             = [(T.Text, T.Text)]
 
 -- Implementation
 
 contextError :: forall b. String -> Either RequestValidationError b
-contextError context = Left $ "Could not locate requested route: " ++ context
+contextError context = Left $ "Could not locate requested route: " ++ context ++ " in spec."
 
 getUrlSegments :: String -> [R.PathSegment] -> R.RouteLookup -> ReqVal R.RouteInfo
 getUrlSegments context [ ]    _ = contextError context
@@ -48,23 +47,25 @@ getIncludedTraits raml routeInfo = mconcat relevant
   relevant = M.elems $ M.filterWithKey (\k _ -> elem k included) traits
 
 methodError :: forall b. String -> ReqVal b
-methodError context = Left $ "Could not locate requested method: " ++ context
+methodError context = Left $ "Could not locate requested method: " ++ context ++ " in spec."
 
 getMethod :: R.Method -> R.RouteInfo -> ReqVal (Maybe R.Info)
 getMethod m r = maybe (methodError (show m)) Right $ M.lookup m (R.methods r)
 
-validateRequestSchema :: WT.Putable a => Maybe R.Schema -> Maybe a -> ReqVal ()
-validateRequestSchema = undefined
+validateRequestSchema :: B.Validatable a => Maybe R.Schema -> Maybe a -> ReqVal ()
+validateRequestSchema _      Nothing     = return ()
+validateRequestSchema schema (Just body) = B.validate schema body
 
 validateQueryParams :: R.QueryLookup -> TextLookup -> ReqVal ()
-validateQueryParams iParams oParams = undefined
+validateQueryParams iParams oParams = mapM_ verifyParam oParams
+  where
+  verifyParam (k,_) = maybe (Left $ "Requested parameter " ++ show k ++ ", not in schema")
+                            (const (return ()))
+                            (M.lookup (T.unpack k) iParams) -- TODO: String/Text mismatch sucks
 
-validateRequest :: WT.Putable a => R.RamlFile
-                                -> R.Method
-                                -> W.Options
-                                -> String
-                                -> Maybe a
-                                -> Either RequestValidationError ()
+validateRequest :: B.Validatable a
+                => R.RamlFile -> R.Method -> W.Options -> String -> Maybe a
+                -> Either RequestValidationError ()
 validateRequest raml verb options url body = do
   routeInfo    <- getUrl url raml
   info         <- fromMaybe mempty `fmap` getMethod verb routeInfo
