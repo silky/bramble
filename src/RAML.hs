@@ -132,9 +132,15 @@ isRoute (k,_) = T.isPrefixOf "/" k
 
 textToMethod :: Monad m => T.Text -> m Method
 textToMethod "get"    = return Get
+textToMethod "GET"    = return Get
 textToMethod "put"    = return Put
+textToMethod "PUT"    = return Put
 textToMethod "post"   = return Post
+textToMethod "POST"   = return Post
 textToMethod "delete" = return Delete
+textToMethod "DELETE" = return Delete
+textToMethod "patch"  = return Delete
+textToMethod "PATCH"  = return Delete
 textToMethod x        = return $ Custom (T.unpack x)
 
 stringToMethod :: Monad m => String -> m Method

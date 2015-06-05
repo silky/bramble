@@ -25,7 +25,8 @@ executable bramble
                        wreq                 >= 0.4.1,
                        EitherT              >= 0.2,
                        transformers         >= 0.3,
-                       split                >= 0.2
+                       split                >= 0.2,
+                       http-types           >= 0.5
 
                        -- hjsonschema       >= 0.5
 

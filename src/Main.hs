@@ -17,6 +17,7 @@ import qualified Body     as B
 -- External Imports
 
 import Text.Groom
+import Control.Lens
 import Control.Arrow
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Either hiding (left)
@@ -24,7 +25,7 @@ import Control.Monad.Trans.Either hiding (left)
 -- Qualified Imports
 
 import qualified Network.Wreq               as W
-import qualified Network.Wreq.Types         as W
+import qualified Network.Wreq.Types         as W hiding (checkStatus, manager)
 import qualified Data.ByteString.Lazy.Char8 as B
 import qualified Data.Yaml.Include          as YI
 import qualified Data.Yaml                  as Y
@@ -34,13 +35,16 @@ import qualified Data.Yaml                  as Y
 main :: IO ()
 main = putStrLn . groom =<< mainE
 
+myOptions :: W.Options
+myOptions = W.defaults &~ W.checkStatus .= Just (\_ _ _ -> Nothing)
+
 mainE :: IO (Either ValidationError (W.Response B.ByteString))
 mainE = runEitherT $ do
   loadedRaml <- liftIO $ YI.decodeFileEither "resources/worldmusic.raml"
   _          <- liftIO $ putStrLn $ groom loadedRaml -- TODO: Debugging
   ramlE      <- fromEither $ left ParseError loadedRaml
-  apiResult  <- liftIO $ genericClientSchema ramlE "GET" W.defaults
-                  "http://httpbin.org/patch"
+  apiResult  <- liftIO $ genericClientSchema ramlE "GET" myOptions
+                  "http://httpbin.org/songs"
                   (Just $ Y.toJSON [1 :: Int ,2,3])
   fromEither apiResult
 

@@ -4,13 +4,14 @@ module Request where
 
 -- Imports
 
-import qualified RAML               as R
-import qualified Data.Map           as M
-import qualified Data.Text          as T
-import qualified Data.List.Split    as S
-import qualified Network.Wreq       as W
-import qualified Network.Wreq.Types as WT
-import qualified Body               as B
+import qualified RAML                   as R
+import qualified Data.Map               as M
+import qualified Data.Text              as T
+import qualified Network.Wreq           as W
+import qualified Network.Wreq.Types     as WT
+import qualified Body                   as B
+import qualified Data.ByteString.Char8  as BS
+import qualified Network.HTTP.Types.URI as U
 
 import Data.Maybe
 import Data.Monoid
@@ -23,21 +24,23 @@ type TextLookup             = [(T.Text, T.Text)]
 
 -- Implementation
 
-contextError :: forall b. String -> Either RequestValidationError b
-contextError context = Left $ "Could not locate requested route: " ++ context ++ " in spec."
+contextError :: forall b. String -> [R.PathSegment] -> Either RequestValidationError b
+contextError context bits =
+  Left $ "Could not locate requested route: " ++ context ++ " ~ " ++ show bits ++ " in spec."
 
 getUrlSegments :: String -> [R.PathSegment] -> R.RouteLookup -> ReqVal R.RouteInfo
-getUrlSegments context [ ]    _ = contextError context
-getUrlSegments context [x]    l = maybe (contextError context) Right $ M.lookup x l
-getUrlSegments context (x:xs) l = do
-  pre <- maybe (contextError context) Right $ M.lookup x l
+getUrlSegments context c@[ ]    _ = contextError context c
+getUrlSegments context c@[x]    l = maybe (contextError context c) Right $ M.lookup x l
+getUrlSegments context c@(x:xs) l = do
+  pre <- maybe (contextError context c) Right $ M.lookup x l
   getUrlSegments context xs (R.subRoutes pre)
 
 getUrl :: String -> R.RamlFile -> ReqVal R.RouteInfo
 getUrl url raml = getUrlSegments url urlSegments routes
   where
   routes      = R.routes raml
-  urlSegments = S.splitOn "/" url
+  urlSegments = map ("/" ++) -- TODO: Find a better way to do this...
+              $ map T.unpack $ U.decodePathSegments $ U.extractPath (BS.pack url)
 
 getIncludedTraits :: R.RamlFile -> R.RouteInfo -> R.Info
 getIncludedTraits raml routeInfo = mconcat relevant
