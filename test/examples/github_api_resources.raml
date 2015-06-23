@@ -1,0 +1,18 @@
+#%RAML 0.8
+title: GitHub API
+version: v3
+baseUri: https://api.github.com
+/user:
+/users:
+  /{userId}:
+    uriParameters:
+      userId:
+        type: integer
+    /followers:
+    /following:
+    /keys:
+      /{keyId}:
+        uriParameters:
+          keyId:
+            type: integer
+

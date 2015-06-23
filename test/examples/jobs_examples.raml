@@ -1,0 +1,18 @@
+/jobs:
+  displayName: Jobs
+  post:
+    description: Create a Job
+    body:
+      text/xml:
+        schema: !include job.xsd
+        example: |
+          <api-request>
+            <input>s3://zencodertesting/test.mov</input>
+          </api-request>
+      application/json:
+        schema: !include job.schema.json
+        example: |
+          {
+            "input": "s3://zencodertesting/test.mov"
+          }
+

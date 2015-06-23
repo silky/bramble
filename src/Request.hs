@@ -12,6 +12,8 @@ import qualified Network.Wreq.Types     as WT
 import qualified Body                   as B
 import qualified Data.ByteString.Char8  as BS
 import qualified Network.HTTP.Types.URI as U
+import qualified Data.Set               as S
+import qualified Data.List              as L
 
 import Data.Maybe
 import Data.Monoid
@@ -59,12 +61,23 @@ validateRequestSchema :: B.Validatable a => Maybe R.Schema -> Maybe a -> ReqVal 
 validateRequestSchema _      Nothing     = return ()
 validateRequestSchema schema (Just body) = B.validate schema body
 
+showStrings :: S.Set String -> String
+showStrings l = "[" ++ L.intercalate ", " (S.toList l) ++ "]"
+
 validateQueryParams :: R.QueryLookup -> TextLookup -> ReqVal ()
-validateQueryParams iParams oParams = mapM_ verifyParam oParams
+validateQueryParams iParams oParams =
+  if iSet == oSet
+     then return ()
+     else Left $ "Non-matching query-params: "
+              ++ showStrings lSet ++ " < "
+              ++ showStrings nSet ++ " < "
+              ++ showStrings rSet
   where
-  verifyParam (k,_) = maybe (Left $ "Requested parameter " ++ show k ++ ", not in schema")
-                            (const (return ()))
-                            (M.lookup (T.unpack k) iParams) -- TODO: String/Text mismatch sucks
+  iSet = S.fromList $ M.keys iParams
+  oSet = S.fromList $ map (T.unpack . fst) oParams
+  nSet = S.intersection iSet oSet
+  lSet = iSet S.\\ nSet
+  rSet = oSet S.\\ nSet
 
 validateRequest :: B.Validatable a
                 => R.RamlFile -> R.Method -> W.Options -> String -> Maybe a

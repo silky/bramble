@@ -1,0 +1,9 @@
+#%RAML 0.8
+title: API Using media type in the URL
+version: v1
+/users{mediaTypeExtension}:
+  uriParameters:
+    mediaTypeExtension:
+      enum: [ .json, .xml ]
+      description: Use .json to specify application/json or .xml to specify text/xml
+

@@ -13,6 +13,10 @@ It provides two interfaces:
 
 [![Data Dependencies](https://raw.githubusercontent.com/sordina/bramble/master/doc/data.png)](https://github.com/sordina/bramble/blob/master/doc/data.png)
 
+# Testing
+
+Examples used for testing are taken from <http://raml.org/spec.html>.
+
 # TODO
 
 * Use a real schema such as https://github.com/timjb/aeson-schema/blob/master/aeson-schema.cabal

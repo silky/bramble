@@ -1,0 +1,14 @@
+/media/popular:
+  displayName: Most Popular Media
+  get:
+    description: |
+      Get a list of what media is most popular at the moment.
+    responses:
+      200:
+        description: |
+          The list of popular media.
+        headers:
+          x-meta-{?}:
+            description: |
+              Field names prefixed with x-meta- contain user-specified metadata.
+

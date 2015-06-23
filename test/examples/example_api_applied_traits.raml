@@ -1,0 +1,16 @@
+#%RAML 0.8
+title: Example API
+version: v1
+resourceTypes:
+  - collection: !include resourceTypes/collection.yaml
+    member: !include resourceTypes/member.yaml
+traits:
+  - secured: !include traits/secured.yaml
+    paged: !include traits/paged.yaml
+    rateLimited: !include traits/rate-limited.yaml
+/users:
+  type: collection
+  is: [ secured ] # if collection defines a post method, that method is also secured
+  get:
+    is: [ paged, rateLimited ]
+

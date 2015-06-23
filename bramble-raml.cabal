@@ -26,7 +26,8 @@ executable bramble
                        EitherT              >= 0.2,
                        transformers         >= 0.3,
                        split                >= 0.2,
-                       http-types           >= 0.5
+                       http-types           >= 0.5,
+                       lens                 >= 4.9
 
                        -- hjsonschema       >= 0.5
 

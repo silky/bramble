@@ -1,0 +1,16 @@
+#%RAML 0.8
+title: Example API
+version: v1
+resourceTypes:
+  - !include standardResourceTypes.yaml  # where standardResourceTypes.yaml is a map of standard resource type definitions
+  - !include resourceTypes/specialCollection.yaml # where specialCollection.yaml defines one resource type
+traits:
+  - !include standardTraits.yaml  # where standardTraits.yaml is a map of standard trait definitions
+  - paged:
+      queryParameters:
+        start:
+          type: number
+    searchable:
+      queryParameters:
+        query:
+          type: string

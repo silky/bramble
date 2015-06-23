@@ -1,0 +1,10 @@
+#%RAML 0.8
+title: Example API
+version: v1
+resourceTypes:
+   - collection: !include resourceTypes/collection.yaml
+   - member: !include resourceTypes/member.yaml
+traits:
+   - secured: !include traits/secured.yaml
+   - rateLimited: !include traits/rate-limited.yaml
+
