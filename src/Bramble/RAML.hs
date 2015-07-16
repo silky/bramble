@@ -277,9 +277,6 @@ instance J.FromJSON TraitList where
 
 -- Helper Functions:
 
-emptyObject :: J.Value
-emptyObject = J.Object H.empty
-
 getTraits :: J.Object -> J.Parser TraitLookup
 getTraits o = do
   pTraits <- o .:? "traits" .!= J.emptyArray
