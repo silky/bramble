@@ -1,5 +1,5 @@
 
-module IO (
+module Bramble.IO (
 
   -- Re-Exports
   module R,
@@ -17,10 +17,10 @@ module IO (
 
 -- TODO: Re-export RAML
 
-import qualified Body     as B
-import qualified RAML     as R
-import qualified Request  as Req
-import qualified Response as Res
+import qualified Bramble.Body     as B
+import qualified Bramble.RAML     as R
+import qualified Bramble.Request  as Req
+import qualified Bramble.Response as Res
 
 import Control.Lens
 import Control.Arrow

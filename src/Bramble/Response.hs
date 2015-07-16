@@ -1,7 +1,7 @@
 
-module Response where
+module Bramble.Response where
 
-import qualified RAML                       as R
+import qualified Bramble.RAML               as R
 import qualified Network.Wreq               as W
 import qualified Data.ByteString.Lazy.Char8 as B
 

@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 
-module Body where
+module Bramble.Body where
 
 import qualified Data.Yaml as Y
 

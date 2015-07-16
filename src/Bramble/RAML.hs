@@ -6,21 +6,21 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveGeneric              #-}
 
-module RAML where
+module Bramble.RAML where
 
 -- External qualified imports:
 
-import qualified Data.Aeson                 as J
-import qualified Data.Aeson.Types           as J
+import qualified Data.Aeson            as J
+import qualified Data.Aeson.Types      as J
 
 -- STDLIB qualified imports:
 
-import qualified Data.Map                   as M
-import qualified Data.HashMap.Strict        as H
-import qualified Data.Vector                as V
-import qualified Data.Text                  as T
-import qualified Data.List                  as L
-import qualified Data.Functor.Identity      as I
+import qualified Data.Map              as M
+import qualified Data.HashMap.Strict   as H
+import qualified Data.Vector           as V
+import qualified Data.Text             as T
+import qualified Data.List             as L
+import qualified Data.Functor.Identity as I
 
 -- Unqualified imports:
 
@@ -139,8 +139,8 @@ textToMethod "post"   = return Post
 textToMethod "POST"   = return Post
 textToMethod "delete" = return Delete
 textToMethod "DELETE" = return Delete
-textToMethod "patch"  = return Delete
-textToMethod "PATCH"  = return Delete
+textToMethod "patch"  = return $ Custom "PATCH"
+textToMethod "PATCH"  = return $ Custom "PATCH"
 textToMethod x        = return $ Custom (T.unpack x)
 
 stringToMethod :: Monad m => String -> m Method
@@ -282,7 +282,7 @@ emptyObject = J.Object H.empty
 
 getTraits :: J.Object -> J.Parser TraitLookup
 getTraits o = do
-  pTraits <- o .:? "traits" .!= emptyObject
+  pTraits <- o .:? "traits" .!= J.emptyArray
   lTraits <- J.parseJSON pTraits
   return   $ M.unions lTraits
 

@@ -1,25 +1,34 @@
 module Main where
 
-import IO
-import RAML
+import Bramble.IO
+import Bramble.RAML
 import System.Exit
 import System.Directory
+import System.Environment
 import Control.Monad.Trans.Either
 
 main :: IO ()
 main = do
-  results <- testFiles
-  case sequence results of (Left  _) -> exitFailure
-                           (Right _) -> exitSuccess
+  args    <- getArgs
+  results <- case args of [] -> find "test/examples" >>= testFiles
+                          xs -> testFiles xs
+  either (const exitFailure) (const exitSuccess) (sequence results)
 
-testFiles :: IO [Either ValidationError RamlFile]
-testFiles = mapM test . filter removeLinks =<< getDirectoryContents "test/examples"
+find :: String -> IO [String]
+find x = fmap (map (prefix x) . filter removeLinks) (getDirectoryContents x)
   where
   removeLinks = not . flip elem [".",".."]
+  prefix d f  = d ++ "/" ++ f
+
+testFiles :: [String] -> IO [Either ValidationError RamlFile]
+testFiles files = mapM test files
+
+rightPad :: String -> String -- rightPad a string up to length 55
+rightPad x = x ++ replicate (max 0 (57 - length x)) ' '
 
 test :: String -> IO (Either ValidationError RamlFile)
 test x = do
   loadedRaml <- runEitherT $ loadSchema x
-  case loadedRaml of (Left  _) -> print ("Failed to load    " ++ x)
-                     (Right _) -> print ("Loading succeeded " ++ x)
+  case loadedRaml of (Left  e) -> putStrLn $ rightPad x ++ " -> " ++ show e
+                     (Right _) -> putStrLn $ rightPad x ++ " -> " ++ "SUCCESS"
   return loadedRaml

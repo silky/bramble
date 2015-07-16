@@ -1,15 +1,16 @@
 {-# LANGUAGE RankNTypes #-}
 
-module Request where
+module Bramble.Request where
 
 -- Imports
 
-import qualified RAML                   as R
+import qualified Bramble.RAML           as R
+
 import qualified Data.Map               as M
 import qualified Data.Text              as T
 import qualified Network.Wreq           as W
 import qualified Network.Wreq.Types     as WT
-import qualified Body                   as B
+import qualified Bramble.Body           as B
 import qualified Data.ByteString.Char8  as BS
 import qualified Network.HTTP.Types.URI as U
 import qualified Data.Set               as S

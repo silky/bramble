@@ -9,7 +9,7 @@ module Main where
 
 -- Internal Imports
 
-import qualified IO       as I
+import qualified Bramble.IO as I
 
 -- External Imports
 
