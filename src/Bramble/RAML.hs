@@ -5,6 +5,7 @@
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE TupleSections              #-}
 
 module Bramble.RAML where
 
@@ -123,9 +124,10 @@ instance J.FromJSON ParamType where
   parseJSON x            = x <~> "ParamType"
 
 data RouteInfo = RouteInfo
-  { methods        :: MethodLookup
-  , includedTraits :: TraitList
-  , subRoutes      :: RouteLookup } deriving (Eq,Ord,Show)
+  { methods          :: MethodLookup
+  , routeDisplayName :: Maybe T.Text -- TODO: {x}DisplayName is referenced from multiple data-types, consider agregating this
+  , includedTraits   :: TraitList
+  , subRoutes        :: RouteLookup } deriving (Eq,Ord,Show)
 
 isRoute :: (T.Text, t) -> Bool
 isRoute (k,_) = T.isPrefixOf "/" k
@@ -149,8 +151,34 @@ stringToMethod = textToMethod . T.pack
 getIncludedTraits :: J.Object -> J.Parser TraitList
 getIncludedTraits o = o .:? "is" .!= emptyTraitList
 
+-- About `partedAction`:
+-- There should be a partial-parser that works on lists (possibly converted from objects)
+-- that has a partitioning predicate that allows the matching items to be parsed as a
+-- stand-alone list and the the remaing items to be given to the second parser, or possibly
+-- have them returned as a pair... vice-versa
+--
+partedAction :: Monad m => (a -> Bool) -> ([a] -> m b) -> ([a] -> m c) -> (b -> c -> m d) -> [a] -> m d
+partedAction part f g combine l = do
+  let (xs,ys) = L.partition part l
+  b          <- f xs
+  c          <- g ys
+  combine b c
+
+partialParser :: Monad m => (a -> Bool) -> ([a] -> m b) -> [a] -> m (b,[a])
+partialParser part f = partedAction part f return ((return .) . (,)) -- TODO: Monad m => (a -> b -> c) -> a -> b -> m c
+
+-- TODO: Performance Improvement - Using objects directly here would be faster
+--
+partialKeyParser :: T.Text -> ([(T.Text, a)] -> J.Parser b) -> [(T.Text, a)] -> J.Parser (b, [(T.Text, a)])
+partialKeyParser k = partialParser ((k==) . fst)
+
+(.:?<) :: J.FromJSON a => J.Object -> T.Text -> J.Parser (Maybe a, J.Object)
+o .:?< k = case H.lookup k o of Nothing -> return (Nothing, o)
+                                Just  v -> fmap (, H.delete k o) (J.parseJSON v)
+
 instance J.FromJSON RouteInfo where
-  parseJSON (J.Object o) = do
+  parseJSON (J.Object o') = do
+    (routeDisplayName, o)  <- o' .:?< "displayName"
     let items               = H.toList o
         (pRoutes, mMethods) = L.partition isRoute items
         (_inc,    pMethods) = L.partition ((== "is") . fst) mMethods
