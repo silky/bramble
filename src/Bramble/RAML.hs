@@ -126,6 +126,7 @@ instance J.FromJSON ParamType where
 data RouteInfo = RouteInfo
   { methods          :: MethodLookup
   , routeDisplayName :: Maybe T.Text -- TODO: {x}DisplayName is referenced from multiple data-types, consider agregating this
+  , routeDescription :: Maybe T.Text -- TODO: {x}Description is referenced from multiple data-types, consider agregating this
   , includedTraits   :: TraitList
   , subRoutes        :: RouteLookup } deriving (Eq,Ord,Show)
 
@@ -172,13 +173,15 @@ partialParser part f = partedAction part f return ((return .) . (,)) -- TODO: Mo
 partialKeyParser :: T.Text -> ([(T.Text, a)] -> J.Parser b) -> [(T.Text, a)] -> J.Parser (b, [(T.Text, a)])
 partialKeyParser k = partialParser ((k==) . fst)
 
+-- | Lookup a key in a JSON object and return the corresponding value and the remaining items if it is found
 (.:?<) :: J.FromJSON a => J.Object -> T.Text -> J.Parser (Maybe a, J.Object)
 o .:?< k = case H.lookup k o of Nothing -> return (Nothing, o)
                                 Just  v -> fmap (, H.delete k o) (J.parseJSON v)
 
 instance J.FromJSON RouteInfo where
-  parseJSON (J.Object o') = do
-    (routeDisplayName, o)  <- o' .:?< "displayName"
+  parseJSON (J.Object o) = do
+    (routeDisplayName, o)  <- o .:?< "displayName" -- TODO: Anything else lurking here?
+    (routeDescription, o)  <- o .:?< "description" -- TODO: Anything else lurking here?
     let items               = H.toList o
         (pRoutes, mMethods) = L.partition isRoute items
         (_inc,    pMethods) = L.partition ((== "is") . fst) mMethods
@@ -234,10 +237,10 @@ getResponses o = o .:? "responses" .!= emptyLookup
 
 instance J.FromJSON Info where
   parseJSON (J.Object o) = do
-    description    <- o .:? "description"
-    parameters     <- getParameters o
-    requestSchema  <- o .:? "schema"
-    responses      <- getResponses o
+    description      <- o .:? "description"
+    parameters       <- getParameters o
+    requestSchema    <- o .:? "schema"
+    responses        <- getResponses o
     return Info { .. }
 
   parseJSON x = x <~> "Info"

@@ -2,6 +2,7 @@ module Main where
 
 import Bramble.IO
 import Bramble.RAML
+import Data.Either
 import System.Exit
 import System.Directory
 import System.Environment
@@ -12,6 +13,10 @@ main = do
   args    <- getArgs
   results <- case args of [] -> find "test/examples" >>= testFiles
                           xs -> testFiles xs
+  putStrLn ""
+  putStrLn $ "Results: " ++ show (length (rights results)) ++ "/" ++ show (length results) ++ " passed"
+  putStrLn ""
+
   either (const exitFailure) (const exitSuccess) (sequence results)
 
 find :: String -> IO [String]
@@ -21,7 +26,7 @@ find x = fmap (map (prefix x) . filter removeLinks) (getDirectoryContents x)
   prefix d f  = d ++ "/" ++ f
 
 testFiles :: [String] -> IO [Either ValidationError RamlFile]
-testFiles files = mapM test files
+testFiles = mapM test
 
 rightPad :: String -> String -- rightPad a string up to length 55
 rightPad x = x ++ replicate (max 0 (57 - length x)) ' '
