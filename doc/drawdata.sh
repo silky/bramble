@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MODEL="src/RAML.hs"
+MODEL="src/Bramble/RAML.hs"
 
 echo 'digraph {'
 data="$(grep '^data' $MODEL | sed 's/data //; s/ .*//')"
@@ -11,11 +11,11 @@ do
 	targets="$(grep "data $i .*=" $MODEL -A 6 \
 		| sed '/^$/,$d' \
 		| grep '::' \
-		| sed 's/.*:: //; s/Maybe //; s/J.Value//; s/String//; s/ .*//; s/\[//g; s/\]//g')"
+		| sed 's/.*:: //; s/Maybe //; s/J.Value//; s/T.Text//; s/String//; s/ .*//; s/\[//g; s/\]//g')"
 	targets="$targets $(grep "newtype $i .*=" $MODEL -A 6 \
 		| sed '/^$/,$d' \
 		| grep '::' \
-		| sed 's/.*:: //; s/Maybe //; s/J.Value//; s/String//; s/ .*//; s/\[//g; s/\]//g')"
+		| sed 's/.*:: //; s/Maybe //; s/J.Value//; s/T.Text//; s/String//; s/ .*//; s/\[//g; s/\]//g')"
 	for j in $targets
 	do
 		echo "$i -> $j;"
@@ -32,6 +32,7 @@ do
 		| sed 's/Maybe//g' \
 		| sed 's/[[:<:]]M.Map[[:>:]]/ /g' \
 		| sed 's/[[:<:]]J.Value[[:>:]]/ /g' \
+		| sed 's/[[:<:]]T.Text[[:>:]]/ /g' \
 		| sed 's/[[:<:]]String[[:>:]]/ /g' \
 		| sed 's/[[:<:]]Int[[:>:]]/ /g' \
 		| sed 's/[[:<:]]Lookup[[:>:]]/ /g')"
