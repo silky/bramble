@@ -11,7 +11,7 @@ It provides two interfaces:
 
 # Structure
 
-[![Data Dependencies](https://raw.githubusercontent.com/sordina/bramble/master/doc/data.png)](https://github.com/sordina/bramble/blob/master/doc/data.png)
+[![Data Dependencies](https://raw.githubusercontent.com/sordina/bramble/master/doc/raml.png)](https://github.com/sordina/bramble/blob/master/doc/data.png)
 
 # Testing
 
